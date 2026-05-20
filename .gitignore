@@ -1,0 +1,11 @@
+node_modules/
+dist/
+# the GitHub Action runs its committed bundle, so keep it tracked
+!packages/action/dist/
+*.tsbuildinfo
+.DS_Store
+*.log
+.claude/
+.vercel/
+packages/core/preview*.svg
+packages/core/e2e*.svg

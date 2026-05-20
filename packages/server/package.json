@@ -1,0 +1,14 @@
+{
+  "name": "@markdown-rbmk/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@markdown-rbmk/core": "workspace:*",
+    "@vercel/kv": "^3.0.0"
+  }
+}

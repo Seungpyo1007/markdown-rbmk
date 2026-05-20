@@ -1,0 +1,36 @@
+name: 'Reactor Core Stats'
+description: 'Generate an RBMK reactor-core style SVG badge of your GitHub language stats.'
+author: 'markdown-rbmk'
+branding:
+  icon: 'activity'
+  color: 'green'
+inputs:
+  username:
+    description: 'GitHub username to collect stats for. Defaults to the repository owner.'
+    required: false
+  mode:
+    description: 'Badge mode: commit (contribution heatmap), language (language rings) or hybrid.'
+    required: false
+    default: 'commit'
+  scope:
+    description: 'public (REST, public repos only) or all (GraphQL, includes private repos — needs a PAT). Used by language/hybrid modes.'
+    required: false
+    default: 'public'
+  output_path:
+    description: 'Path to write the generated SVG file.'
+    required: false
+    default: 'reactor-core.svg'
+  theme:
+    description: 'Badge theme: dark or light.'
+    required: false
+    default: 'dark'
+  max_repos:
+    description: 'Maximum number of repositories to scan.'
+    required: false
+    default: '100'
+outputs:
+  svg_path:
+    description: 'Path of the generated SVG file.'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

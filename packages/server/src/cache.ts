@@ -1,0 +1,34 @@
+/**
+ * Optional Vercel KV cache (SPEC 8.4). No-ops unless KV env vars are present,
+ * so local `vercel dev` and tests run fine without any KV setup. Cache
+ * failures are swallowed — caching must never break the badge.
+ */
+const KV_ENABLED = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+
+/** 24h TTL, matching the s-maxage on the response. */
+const TTL_SECONDS = 86_400;
+
+async function kvClient() {
+  const mod = await import('@vercel/kv');
+  return mod.kv;
+}
+
+export async function cacheGet(key: string): Promise<string | null> {
+  if (!KV_ENABLED) return null;
+  try {
+    const kv = await kvClient();
+    return (await kv.get<string>(`badge:${key}`)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function cacheSet(key: string, svg: string): Promise<void> {
+  if (!KV_ENABLED) return;
+  try {
+    const kv = await kvClient();
+    await kv.set(`badge:${key}`, svg, { ex: TTL_SECONDS });
+  } catch {
+    /* ignore — caching is best-effort */
+  }
+}

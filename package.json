@@ -1,0 +1,20 @@
+{
+  "name": "markdown-rbmk",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "RBMK reactor-core style SVG badge for GitHub language stats",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "pnpm --filter @markdown-rbmk/core preview"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
