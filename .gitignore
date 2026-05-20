@@ -6,6 +6,8 @@ dist/
 .DS_Store
 *.log
 .fn-build/
+# built on Vercel by `pnpm build:fn` (vercel.json buildCommand)
+badge-bundle.js
 .claude/
 .vercel/
 packages/core/preview*.svg

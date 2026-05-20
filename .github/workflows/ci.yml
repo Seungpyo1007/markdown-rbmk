@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm -r exec tsc --noEmit -p tsconfig.json
+
+      - name: Verify the committed Action bundle is up to date
+        run: |
+          pnpm --filter @markdown-rbmk/action build
+          git diff --exit-code -- packages/action/dist \
+            || { echo "::error::packages/action/dist is stale — run 'pnpm --filter @markdown-rbmk/action build' and commit it"; exit 1; }
