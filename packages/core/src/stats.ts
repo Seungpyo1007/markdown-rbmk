@@ -103,11 +103,11 @@ function summarise(input: ResolvedStatsInput, repos: RepoInfo[]): StatsResult {
 /** REST path (SPEC 4.1, scope=public): list public repos + per-repo languages. */
 async function fetchPublicRepos(input: ResolvedStatsInput): Promise<RepoInfo[]> {
   const octokit = new Octokit(input.token ? { auth: input.token } : {});
-  const repos: RepoInfo[] = [];
   const perPage = 100;
+  const listed: Array<{ name: string; isFork: boolean; isArchived: boolean }> = [];
 
   try {
-    for (let page = 1; repos.length < input.maxRepos; page++) {
+    for (let page = 1; listed.length < input.maxRepos; page++) {
       const { data } = await octokit.rest.repos.listForUser({
         username: input.username,
         per_page: perPage,
@@ -118,25 +118,30 @@ async function fetchPublicRepos(input: ResolvedStatsInput): Promise<RepoInfo[]> 
       if (data.length === 0) break;
 
       for (const repo of data) {
-        if (repos.length >= input.maxRepos) break;
-        const { data: languages } = await octokit.rest.repos.listLanguages({
-          owner: input.username,
-          repo: repo.name,
-        });
-        repos.push({
+        if (listed.length >= input.maxRepos) break;
+        listed.push({
           name: repo.name,
           isFork: Boolean(repo.fork),
           isArchived: Boolean(repo.archived),
-          languages,
         });
       }
       if (data.length < perPage) break;
     }
+
+    // Fetch per-repo languages concurrently — sequential calls are far too
+    // slow for a badge endpoint (dozens of repos = several seconds).
+    return await Promise.all(
+      listed.map(async (repo) => {
+        const { data: languages } = await octokit.rest.repos.listLanguages({
+          owner: input.username,
+          repo: repo.name,
+        });
+        return { ...repo, languages };
+      }),
+    );
   } catch (err) {
     throw mapGitHubError(err);
   }
-
-  return repos;
 }
 
 const ALL_REPOS_QUERY = `

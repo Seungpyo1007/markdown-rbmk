@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "echo 'skip — the function bundle is prebuilt (pnpm build:fn)'",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "functions": {
+    "api/badge.ts": { "maxDuration": 30 }
+  }
 }

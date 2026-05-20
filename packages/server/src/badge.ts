@@ -93,14 +93,15 @@ export async function handleBadge(request: Request, deps: BadgeDeps = {}): Promi
 
   try {
     const token = process.env.GITHUB_TOKEN;
-    const stats =
+    // Fetch stats and contributions in parallel (hybrid needs both).
+    const [stats, contributions] = await Promise.all([
       mode === 'language' || mode === 'hybrid'
-        ? await collectStatsFn({ username, scope: 'public', token, maxRepos })
-        : undefined;
-    const contributions =
+        ? collectStatsFn({ username, scope: 'public', token, maxRepos })
+        : Promise.resolve(undefined),
       mode === 'commit' || mode === 'hybrid'
-        ? await collectContributionsFn({ username, token })
-        : undefined;
+        ? collectContributionsFn({ username, token })
+        : Promise.resolve(undefined),
+    ]);
 
     const svg = render({ mode, username, theme, stats, contributions });
     await cacheSet(cacheKey, svg);
