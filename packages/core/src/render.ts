@@ -287,7 +287,8 @@ export function render(opts: RenderOptions): string {
 
   const width = showLegend ? 800 : 600;
   return [
-    `<svg viewBox="0 0 ${width} 600" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${width}px;display:block">`,
+    `<svg viewBox="0 0 ${width} 600" xmlns="http://www.w3.org/2000/svg" role="img" style="width:100%;max-width:${width}px;display:block">`,
+    `<title>markdown-RBMK reactor core — @${escapeXml(opts.username)} (${mode} mode)</title>`,
     `<defs><radialGradient id="bg-glow" cx="50%" cy="50%" r="50%">`,
     `<stop offset="0%" stop-color="${palette.glowInner}" stop-opacity="0.6"/>`,
     `<stop offset="60%" stop-color="${palette.glowMid}" stop-opacity="0.3"/>`,

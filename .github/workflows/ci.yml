@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -27,8 +29,21 @@ jobs:
       - name: Typecheck
         run: pnpm -r exec tsc --noEmit -p tsconfig.json
 
-      - name: Verify the committed Action bundle is up to date
+      # The GitHub Action runs its committed bundle, which inlines core/server.
+      # On a push, rebuild it and commit any drift automatically; on a PR, fail
+      # so the contributor rebuilds it themselves.
+      - name: Keep the Action bundle in sync
         run: |
           pnpm --filter @markdown-rbmk/action build
-          git diff --exit-code -- packages/action/dist \
-            || { echo "::error::packages/action/dist is stale — run 'pnpm --filter @markdown-rbmk/action build' and commit it"; exit 1; }
+          if git diff --quiet -- packages/action/dist; then
+            echo "Action bundle is up to date."
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packages/action/dist
+            git commit -m "chore: rebuild Action bundle [skip ci]"
+            git push
+          else
+            echo "::error::Action bundle is stale — run 'pnpm --filter @markdown-rbmk/action build' and commit it"
+            exit 1
+          fi
