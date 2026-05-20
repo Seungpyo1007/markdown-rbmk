@@ -1,5 +1,11 @@
 # ☢️ markdown-RBMK
 
+<p align="center">
+  <a href="https://github.com/Seungpyo1007/markdown-rbmk/actions/workflows/ci.yml"><img src="https://github.com/Seungpyo1007/markdown-rbmk/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2ecc71" alt="MIT License"></a>
+  <a href="https://markdown-rbmk.vercel.app"><img src="https://img.shields.io/badge/demo-live-2ecc71" alt="Live demo"></a>
+</p>
+
 **Your GitHub activity, rendered as an RBMK reactor core.** A self-contained,
 animated SVG badge for your profile README — no JavaScript runtime, no canvas,
 no GIF encoding. Just one `<img>` tag.
@@ -39,6 +45,12 @@ A commit heatmap core wrapped in an outer ring of your top languages, with both
 readouts on one panel.
 
 <img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;mode=hybrid" width="520" alt="hybrid mode">
+
+### 🌗 Light theme
+
+Any mode also takes `&theme=light` for a light background:
+
+<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;mode=language&amp;theme=light" width="520" alt="light theme">
 
 ---
 
@@ -90,7 +102,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: Seungpyo1007/markdown-rbmk/packages/action@v1
+      - uses: Seungpyo1007/markdown-rbmk/packages/action@v1.0.0
         with:
           username: ${{ github.repository_owner }}
           mode: commit

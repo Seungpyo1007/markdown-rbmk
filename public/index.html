@@ -13,27 +13,43 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1.1rem;
+        gap: 1.4rem;
         background: #0d1117;
         color: #c9d1d9;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         text-align: center;
-        padding: 2rem 1rem;
+        padding: 2.5rem 1rem;
       }
-      h1 { margin: 0; font-size: 1.6rem; }
-      p { margin: 0; color: #8b949e; max-width: 30rem; line-height: 1.5; }
+      h1 { margin: 0; font-size: 1.7rem; }
+      p { margin: 0; color: #8b949e; max-width: 32rem; line-height: 1.55; }
       code { background: #161b22; padding: 0.15rem 0.4rem; border-radius: 4px; color: #7fae8f; }
-      img { width: 100%; max-width: 460px; }
-      a { color: #2ECC71; }
+      a { color: #2ecc71; }
+      .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.4rem; }
+      figure { margin: 0; }
+      figure img { width: 100%; max-width: 420px; display: block; }
+      figcaption { margin-top: 0.35rem; color: #7fae8f; font-size: 0.85rem; }
     </style>
   </head>
   <body>
     <h1>☢️ markdown-RBMK</h1>
     <p>Your GitHub activity, rendered as an RBMK reactor-core SVG badge.</p>
-    <img src="/api/badge?username=Seungpyo1007&amp;mode=commit" alt="reactor core badge" />
+    <div class="modes">
+      <figure>
+        <img src="/api/badge?username=Seungpyo1007&amp;mode=commit" alt="commit mode badge" />
+        <figcaption>mode=commit</figcaption>
+      </figure>
+      <figure>
+        <img src="/api/badge?username=Seungpyo1007&amp;mode=language" alt="language mode badge" />
+        <figcaption>mode=language</figcaption>
+      </figure>
+      <figure>
+        <img src="/api/badge?username=Seungpyo1007&amp;mode=hybrid" alt="hybrid mode badge" />
+        <figcaption>mode=hybrid</figcaption>
+      </figure>
+    </div>
     <p>
       Embed: <code>/api/badge?username=YOUR_NAME</code><br />
-      modes: <code>commit</code> · <code>language</code> · <code>hybrid</code>
+      params: <code>mode</code> · <code>theme</code> · <code>maxRepos</code>
     </p>
     <p><a href="https://github.com/Seungpyo1007/markdown-rbmk">Documentation on GitHub →</a></p>
   </body>
