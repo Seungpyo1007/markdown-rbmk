@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as core from '@actions/core';
 import type { ContributionResult, StatsResult } from '@markdown-rbmk/core';
 import { run } from '../src/run';
 
@@ -90,6 +91,9 @@ describe('run', () => {
 
   it('fails the action (no file written) when collection throws', async () => {
     process.env.INPUT_USERNAME = 'ghost';
+    // Stub setFailed so its `::error::` workflow command is not emitted as a
+    // stray annotation when the suite itself runs inside GitHub Actions.
+    const setFailed = vi.spyOn(core, 'setFailed').mockImplementation(() => {});
     let wrote = false;
 
     await run({
@@ -102,6 +106,7 @@ describe('run', () => {
     });
 
     expect(wrote).toBe(false);
-    expect(process.exitCode).toBe(1); // core.setFailed()
+    expect(setFailed).toHaveBeenCalledWith(expect.stringContaining('boom'));
+    setFailed.mockRestore();
   });
 });
