@@ -250,7 +250,7 @@ export function render(opts: RenderOptions): string {
 
     cellSvg.push(
       `<rect x="${pos.cx}" y="${pos.cy}" width="16" height="16" rx="1" fill="${cell.color}">` +
-        `<animate attributeName="opacity" values="0.85;1;0.85" dur="${num(dur)}s" begin="${num(begin)}s" repeatCount="indefinite"/>` +
+        `<animate attributeName="opacity" values="0.5;1;0.5" dur="${num(dur)}s" begin="${num(begin)}s" repeatCount="indefinite"/>` +
         `</rect>`,
     );
     if (cell.value !== null) {
