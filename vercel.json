@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'skip — the function bundle is prebuilt (pnpm build:fn)'",
+  "outputDirectory": "public"
+}

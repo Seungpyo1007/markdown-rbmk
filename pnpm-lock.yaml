@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.19
+      '@vercel/ncc':
+        specifier: ^0.38.3
+        version: 0.38.4
       tsx:
         specifier: ^4.19.2
         version: 4.22.3

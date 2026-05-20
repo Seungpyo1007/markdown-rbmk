@@ -1,11 +1,11 @@
-# ☢️ markdown-rbmk
+# ☢️ markdown-RBMK
 
 **Your GitHub activity, rendered as an RBMK reactor core.** A self-contained,
 animated SVG badge for your profile README — no JavaScript runtime, no canvas,
 no GIF encoding. Just one `<img>` tag.
 
 <p align="center">
-  <img src="examples/commit.svg" width="680" alt="markdown-rbmk reactor core badge">
+  <img src="examples/commit.svg" width="680" alt="markdown-RBMK reactor core badge">
 </p>
 
 Every cell is a fuel channel. The center runs hottest. A faint flux animation

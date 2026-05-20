@@ -5,7 +5,9 @@ dist/
 *.tsbuildinfo
 .DS_Store
 *.log
+.fn-build/
 .claude/
 .vercel/
 packages/core/preview*.svg
 packages/core/e2e*.svg
+.vercel
