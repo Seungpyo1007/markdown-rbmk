@@ -5,7 +5,7 @@ animated SVG badge for your profile README — no JavaScript runtime, no canvas,
 no GIF encoding. Just one `<img>` tag.
 
 <p align="center">
-  <img src="examples/commit.svg" width="680" alt="markdown-RBMK reactor core badge">
+  <img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007" width="680" alt="markdown-RBMK reactor core badge">
 </p>
 
 Every cell is a fuel channel. The center runs hottest. A faint flux animation
@@ -24,21 +24,21 @@ Each cell is a day; colour is commit intensity (idle → hot), the number is tha
 day's commit count. The instrument panel reports totals, active/idle days and
 your peak day.
 
-<img src="examples/commit.svg" width="520" alt="commit mode">
+<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;mode=commit" width="520" alt="commit mode">
 
 ### 🧪 `language` — language rings
 
 Concentric rings sized by language share — your most-used language fills the
 core. The panel lists the fuel channels with exact percentages.
 
-<img src="examples/language.svg" width="520" alt="language mode">
+<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;mode=language" width="520" alt="language mode">
 
 ### ⚛️ `hybrid` — commit core + language rim
 
 A commit heatmap core wrapped in an outer ring of your top languages, with both
 readouts on one panel.
 
-<img src="examples/hybrid.svg" width="520" alt="hybrid mode">
+<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;mode=hybrid" width="520" alt="hybrid mode">
 
 ---
 
@@ -46,7 +46,9 @@ readouts on one panel.
 
 ### Hosted badge — public repositories
 
-Drop this in your README and swap in your username:
+Drop this into your README, swap in your username, and freely tweak the badge
+straight from the URL — change `mode`, `theme` or `maxRepos` and the reactor
+re-renders:
 
 ```md
 ![reactor](https://markdown-rbmk.vercel.app/api/badge?username=YOUR_NAME)
@@ -61,7 +63,7 @@ Query parameters:
 | `theme`    | `dark` · `light`                | `dark`    |
 | `maxRepos` | `1`–`100`                       | `100`     |
 
-Examples:
+Examples — just edit the query string:
 
 ```md
 ![reactor](https://markdown-rbmk.vercel.app/api/badge?username=octocat&mode=hybrid)
@@ -137,37 +139,6 @@ Action inputs: `username`, `mode`, `scope`, `theme`, `max_repos`, `output_path`.
   themes automatically.
 - **`commit` / `hybrid`** read the GitHub contribution calendar (GraphQL);
   **`language`** sums repository language bytes (REST).
-
----
-
-## Development
-
-Requires Node 20+ and pnpm.
-
-```sh
-pnpm install
-pnpm test                # run the test suite
-pnpm preview             # render examples/ from fake data into packages/core/preview-*.svg
-```
-
-End-to-end render against the real GitHub API:
-
-```sh
-GITHUB_TOKEN=$(gh auth token) \
-  pnpm --filter @markdown-rbmk/core exec tsx scripts/e2e.ts <username>
-```
-
-### Project structure
-
-```
-markdown-rbmk/
-├── packages/
-│   ├── core/      # stats, contributions, grid, RNG, SVG renderer
-│   ├── server/    # Vercel function — GET /api/badge
-│   └── action/    # GitHub Action
-├── examples/      # sample badges (this README's images)
-└── pnpm-workspace.yaml
-```
 
 ---
 
