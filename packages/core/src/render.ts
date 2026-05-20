@@ -9,6 +9,10 @@ const DOT_MASK_R2 = 275 * 275;
 /** Fraction of cells that form the commit core in hybrid mode. */
 const HYBRID_INNER_FRACTION = 0.65;
 
+/** Start-up "power-up" sequence timing, in seconds. */
+const INTRO_SWEEP = 1.4; // centre-out ripple: how long until the rim lights up
+const INTRO_DUR = 0.5; // per-cell fade-in duration
+
 interface Palette {
   dot: string;
   outline: string;
@@ -78,7 +82,15 @@ function textColor(fill: string): string {
   return (r * 299 + g * 587 + b * 114) / 1000 >= 140 ? '#000' : '#fff';
 }
 
-/** Background dot matrix: 25x25 of 2x2 dots, clipped to a circle. */
+/** A one-shot fade-in `<animate>` that holds its end value (start-up sequence). */
+function fadeIn(to: number, begin: number, dur: number): string {
+  return (
+    `<animate attributeName="opacity" from="0" to="${to}" ` +
+    `begin="${num(begin)}s" dur="${num(dur)}s" fill="freeze"/>`
+  );
+}
+
+/** Background dot matrix: 25x25 of 2x2 dots, clipped to a circle. Fades in. */
 function dotGrid(palette: Palette): string {
   const dots: string[] = [];
   for (let i = 0; i < 25; i++) {
@@ -92,7 +104,7 @@ function dotGrid(palette: Palette): string {
       }
     }
   }
-  return `<g id="dot-grid">${dots.join('')}</g>`;
+  return `<g id="dot-grid" opacity="0">${dots.join('')}${fadeIn(1, 0, 0.6)}</g>`;
 }
 
 /** Decorative "output value" for language cells (SPEC 2.5) — null = blank. */
@@ -223,11 +235,16 @@ function instrumentPanel(mode: RenderMode, opts: RenderOptions, palette: Palette
     });
   }
 
-  return `<g id="panel">${parts.join('')}</g>`;
+  // The whole panel powers on once the reactor finishes its start-up ripple.
+  return `<g id="panel" opacity="0">${parts.join('')}${fadeIn(1, 1.3, 0.6)}</g>`;
 }
 
 /**
  * Render a reactor-core badge as a standalone, animated SVG string.
+ *
+ * On load it plays a one-shot start-up sequence — the glow, dot grid and then
+ * the cells power on in a centre-out ripple — after which every cell settles
+ * into its own looping flux pulse.
  *
  * - `commit`  : a contribution heatmap (cell colour = activity, number = count)
  * - `language`: concentric language rings (the top language fills the core)
@@ -238,6 +255,7 @@ export function render(opts: RenderOptions): string {
   const palette = PALETTES[opts.theme ?? 'dark'];
   const showLegend = opts.showLegend ?? true;
   const positions = computeGridPositions();
+  const maxDist = positions.length > 0 ? (positions[positions.length - 1] as { dist: number }).dist : 1;
   const rng = createRng(opts.username);
   const cells = buildCells(mode, positions.length, opts, palette, rng);
 
@@ -245,20 +263,26 @@ export function render(opts: RenderOptions): string {
   for (let i = 0; i < positions.length; i++) {
     const pos = positions[i]!;
     const cell = cells[i]!;
-    const dur = 1.5 + rng() * 2; // 1.5s - 3.5s
-    const begin = rng() * 2; // 0s - 2s
+    // Start-up ripple: cells light up from the centre outward by distance.
+    const introBegin = (pos.dist / maxDist) * INTRO_SWEEP;
+    const pulseDur = 1.5 + rng() * 2; // 1.5s - 3.5s
+    const pulseBegin = introBegin + INTRO_DUR + rng() * 0.8;
+
+    const label =
+      cell.value !== null
+        ? `<text x="${pos.cx + 8}" y="${pos.cy + 11}" text-anchor="middle" font-size="8" ` +
+          `font-family="ui-monospace,monospace" font-weight="600" fill="${textColor(cell.color)}">${cell.value}</text>`
+        : '';
 
     cellSvg.push(
-      `<rect x="${pos.cx}" y="${pos.cy}" width="16" height="16" rx="1" fill="${cell.color}">` +
-        `<animate attributeName="opacity" values="0.5;1;0.5" dur="${num(dur)}s" begin="${num(begin)}s" repeatCount="indefinite"/>` +
-        `</rect>`,
+      `<g opacity="0">` +
+        `<rect x="${pos.cx}" y="${pos.cy}" width="16" height="16" rx="1" fill="${cell.color}"/>` +
+        label +
+        fadeIn(1, introBegin, INTRO_DUR) +
+        `<animate attributeName="opacity" values="1;0.35;1" begin="${num(pulseBegin)}s" ` +
+        `dur="${num(pulseDur)}s" repeatCount="indefinite"/>` +
+        `</g>`,
     );
-    if (cell.value !== null) {
-      cellSvg.push(
-        `<text x="${pos.cx + 8}" y="${pos.cy + 11}" text-anchor="middle" font-size="8" ` +
-          `font-family="ui-monospace,monospace" font-weight="600" fill="${textColor(cell.color)}">${cell.value}</text>`,
-      );
-    }
   }
 
   const width = showLegend ? 800 : 600;
@@ -269,12 +293,15 @@ export function render(opts: RenderOptions): string {
     `<stop offset="60%" stop-color="${palette.glowMid}" stop-opacity="0.3"/>`,
     `<stop offset="100%" stop-color="${palette.glowMid}" stop-opacity="0"/>`,
     `</radialGradient></defs>`,
-    `<circle cx="300" cy="300" r="280" fill="url(#bg-glow)">`,
-    `<animate attributeName="opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite"/>`,
+    `<circle cx="300" cy="300" r="280" fill="url(#bg-glow)" opacity="0">`,
+    fadeIn(1, 0, 0.8),
+    `<animate attributeName="opacity" values="1;0.6;1" begin="0.8s" dur="4s" repeatCount="indefinite"/>`,
     `</circle>`,
     dotGrid(palette),
     `<g id="cells">${cellSvg.join('')}</g>`,
-    `<circle cx="300" cy="300" r="278" fill="none" stroke="${palette.outline}" stroke-width="1" opacity="0.5"/>`,
+    `<circle cx="300" cy="300" r="278" fill="none" stroke="${palette.outline}" stroke-width="1" opacity="0">`,
+    fadeIn(0.5, 0.3, 0.6),
+    `</circle>`,
     showLegend ? instrumentPanel(mode, opts, palette) : '',
     `</svg>`,
   ].join('');
