@@ -10,7 +10,7 @@ const DOT_MASK_R2 = 275 * 275;
 const HYBRID_INNER_FRACTION = 0.65;
 
 /** Start-up "power-up" sequence timing, in seconds. */
-const INTRO_SWEEP = 1.4; // centre-out ripple: how long until the rim lights up
+const INTRO_SWEEP = 1.8; // centre-out ripple: how long until the rim lights up
 const INTRO_DUR = 0.5; // per-cell fade-in duration
 
 interface Palette {
@@ -265,8 +265,8 @@ export function render(opts: RenderOptions): string {
     const cell = cells[i]!;
     // Start-up ripple: cells light up from the centre outward by distance.
     const introBegin = (pos.dist / maxDist) * INTRO_SWEEP;
-    const pulseDur = 1.5 + rng() * 2; // 1.5s - 3.5s
-    const pulseBegin = introBegin + INTRO_DUR + rng() * 0.8;
+    const pulseDur = 3.5 + rng() * 4; // 3.5s - 7.5s — a slow, calm flux
+    const pulseBegin = introBegin + INTRO_DUR + rng() * 1.5;
 
     const label =
       cell.value !== null
@@ -295,7 +295,7 @@ export function render(opts: RenderOptions): string {
     `</radialGradient></defs>`,
     `<circle cx="300" cy="300" r="280" fill="url(#bg-glow)" opacity="0">`,
     fadeIn(1, 0, 0.8),
-    `<animate attributeName="opacity" values="1;0.6;1" begin="0.8s" dur="4s" repeatCount="indefinite"/>`,
+    `<animate attributeName="opacity" values="1;0.6;1" begin="0.8s" dur="7s" repeatCount="indefinite"/>`,
     `</circle>`,
     dotGrid(palette),
     `<g id="cells">${cellSvg.join('')}</g>`,
