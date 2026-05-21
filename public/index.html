@@ -1,11 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>markdown-RBMK</title>
     <style>
-      :root { color-scheme: dark; }
+      :root { color-scheme: light dark; }
+      [data-theme="dark"] {
+        --bg: #0d1117;
+        --fg: #c9d1d9;
+        --muted: #8b949e;
+        --code-bg: #161b22;
+        --code-fg: #7fae8f;
+        --accent: #2ecc71;
+        --btn-border: #2a3a30;
+      }
+      [data-theme="light"] {
+        --bg: #ffffff;
+        --fg: #1f2328;
+        --muted: #59636e;
+        --code-bg: #eff1f3;
+        --code-fg: #1a7f37;
+        --accent: #1a7f37;
+        --btn-border: #c8e6c8;
+      }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
         min-height: 100vh;
@@ -14,36 +33,60 @@
         align-items: center;
         justify-content: center;
         gap: 1.4rem;
-        background: #0d1117;
-        color: #c9d1d9;
+        background: var(--bg);
+        color: var(--fg);
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         text-align: center;
         padding: 2.5rem 1rem;
+        transition: background 0.2s ease, color 0.2s ease;
       }
       h1 { margin: 0; font-size: 1.7rem; }
-      p { margin: 0; color: #8b949e; max-width: 32rem; line-height: 1.55; }
-      code { background: #161b22; padding: 0.15rem 0.4rem; border-radius: 4px; color: #7fae8f; }
-      a { color: #2ecc71; }
+      p { margin: 0; color: var(--muted); max-width: 32rem; line-height: 1.55; }
+      code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--code-fg); }
+      a { color: var(--accent); }
       .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.4rem; }
       figure { margin: 0; }
       figure img { width: 100%; max-width: 420px; display: block; }
-      figcaption { margin-top: 0.35rem; color: #7fae8f; font-size: 0.85rem; }
+      figcaption { margin-top: 0.35rem; color: var(--code-fg); font-size: 0.85rem; }
+      #toggle {
+        font: inherit;
+        cursor: pointer;
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid var(--btn-border);
+        border-radius: 6px;
+        padding: 0.4rem 0.9rem;
+      }
+      #toggle:hover { border-color: var(--accent); }
     </style>
   </head>
   <body>
     <h1>☢️ markdown-RBMK</h1>
     <p>Your GitHub activity, rendered as an RBMK reactor-core SVG badge.</p>
+    <button id="toggle" type="button">switch to light</button>
     <div class="modes">
       <figure>
-        <img src="/api/badge?username=Seungpyo1007&amp;mode=commit" alt="commit mode badge" />
+        <img
+          data-mode="commit"
+          src="/api/badge?username=Seungpyo1007&amp;mode=commit&amp;theme=dark"
+          alt="commit mode badge"
+        />
         <figcaption>mode=commit</figcaption>
       </figure>
       <figure>
-        <img src="/api/badge?username=Seungpyo1007&amp;mode=language" alt="language mode badge" />
+        <img
+          data-mode="language"
+          src="/api/badge?username=Seungpyo1007&amp;mode=language&amp;theme=dark"
+          alt="language mode badge"
+        />
         <figcaption>mode=language</figcaption>
       </figure>
       <figure>
-        <img src="/api/badge?username=Seungpyo1007&amp;mode=hybrid" alt="hybrid mode badge" />
+        <img
+          data-mode="hybrid"
+          src="/api/badge?username=Seungpyo1007&amp;mode=hybrid&amp;theme=dark"
+          alt="hybrid mode badge"
+        />
         <figcaption>mode=hybrid</figcaption>
       </figure>
     </div>
@@ -52,5 +95,24 @@
       params: <code>mode</code> · <code>theme</code> · <code>maxRepos</code>
     </p>
     <p><a href="https://github.com/Seungpyo1007/markdown-rbmk">Documentation on GitHub →</a></p>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var btn = document.getElementById('toggle');
+        var imgs = document.querySelectorAll('img[data-mode]');
+        function apply(theme) {
+          root.dataset.theme = theme;
+          btn.textContent = theme === 'dark' ? 'switch to light' : 'switch to dark';
+          imgs.forEach(function (img) {
+            img.src = '/api/badge?username=Seungpyo1007&mode=' + img.dataset.mode + '&theme=' + theme;
+          });
+        }
+        btn.addEventListener('click', function () {
+          apply(root.dataset.theme === 'dark' ? 'light' : 'dark');
+        });
+        // Follow the visitor's OS preference on first load.
+        apply(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      })();
+    </script>
   </body>
 </html>
