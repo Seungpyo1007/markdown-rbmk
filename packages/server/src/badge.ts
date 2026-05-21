@@ -12,8 +12,12 @@ export interface BadgeDeps {
 /** GitHub usernames: 1-39 chars, alphanumeric or single hyphens. */
 const USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
 
-const SUCCESS_CACHE = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=300';
-const ERROR_CACHE = 'public, max-age=60';
+// `no-transform` keeps intermediaries from gzip-compressing the SVG. GitHub's
+// camo image proxy mishandles a compressed response and serves a truncated
+// copy, so the badge must go over the wire uncompressed.
+const SUCCESS_CACHE =
+  'public, max-age=3600, s-maxage=86400, stale-while-revalidate=300, no-transform';
+const ERROR_CACHE = 'public, max-age=60, no-transform';
 
 function parseTheme(value: string | null): Theme {
   return value === 'light' ? 'light' : 'dark';
