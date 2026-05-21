@@ -55,6 +55,9 @@ function svgResponse(svg: string, kind: 'fresh' | 'cached' | 'error'): Response 
       'Content-Type': 'image/svg+xml; charset=utf-8',
       'Cache-Control': kind === 'error' ? ERROR_CACHE : SUCCESS_CACHE,
       'X-Badge-Cache': kind === 'cached' ? 'HIT' : 'MISS',
+      // Declaring an encoding stops Vercel from gzip-compressing the body —
+      // camo (GitHub's image proxy) corrupts a compressed SVG response.
+      'Content-Encoding': 'identity',
     },
   });
 }
