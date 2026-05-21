@@ -11,7 +11,7 @@ animated SVG badge for your profile README — no JavaScript runtime, no canvas,
 no GIF encoding. Just one `<img>` tag.
 
 <p align="center">
-  <img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1" width="680" alt="markdown-RBMK reactor core badge">
+  <a href="https://markdown-rbmk.vercel.app"><img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1" width="680" alt="markdown-RBMK reactor core badge"></a>
 </p>
 
 Every cell is a fuel channel. The center runs hottest. A faint flux animation
@@ -30,27 +30,27 @@ Each cell is a day; colour is commit intensity (idle → hot), the number is tha
 day's commit count. The instrument panel reports totals, active/idle days and
 your peak day.
 
-<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=commit" width="520" alt="commit mode">
+<a href="https://markdown-rbmk.vercel.app"><img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=commit" width="520" alt="commit mode"></a>
 
 ### 🧪 `language` — language rings
 
 Concentric rings sized by language share — your most-used language fills the
 core. The panel lists the fuel channels with exact percentages.
 
-<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=language" width="520" alt="language mode">
+<a href="https://markdown-rbmk.vercel.app"><img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=language" width="520" alt="language mode"></a>
 
 ### ⚛️ `hybrid` — commit core + language rim
 
 A commit heatmap core wrapped in an outer ring of your top languages, with both
 readouts on one panel.
 
-<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=hybrid" width="520" alt="hybrid mode">
+<a href="https://markdown-rbmk.vercel.app"><img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=hybrid" width="520" alt="hybrid mode"></a>
 
 ### 🌗 Light theme
 
 Any mode also takes `&theme=light` for a light background:
 
-<img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=language&amp;theme=light" width="520" alt="light theme">
+<a href="https://markdown-rbmk.vercel.app"><img src="https://markdown-rbmk.vercel.app/api/badge?username=Seungpyo1007&amp;v=1&amp;mode=language&amp;theme=light" width="520" alt="light theme"></a>
 
 ---
 
