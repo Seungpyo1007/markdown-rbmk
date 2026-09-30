@@ -60,7 +60,14 @@ export interface Streaks {
 /** Badge display mode (SPEC v0.2). */
 export type RenderMode = 'commit' | 'language' | 'hybrid';
 
+/**
+ * Visual style. `classic` is the v1 look and the default forever — existing
+ * embeds never change. `v2` is the opt-in redesign.
+ */
+export type BadgeStyle = 'classic' | 'v2';
+
 export interface RenderOptions {
+  style?: BadgeStyle; // default 'classic'
   mode?: RenderMode; // default 'commit'
   username: string; // seeds the deterministic RNG
   theme?: Theme; // default 'dark'

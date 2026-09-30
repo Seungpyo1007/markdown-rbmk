@@ -38,4 +38,11 @@ describe('classic renderer golden snapshots', () => {
       render({ mode: 'commit', theme: 'dark', showLegend: true, username: FIXTURE_USER, contributions }),
     );
   });
+
+  it('style=classic is identical to omitting style', () => {
+    for (const mode of modes) {
+      const base = { mode, username: FIXTURE_USER, stats: fixtureStats, contributions: fixtureContributions() };
+      expect(render({ ...base, style: 'classic' })).toBe(render(base));
+    }
+  });
 });
