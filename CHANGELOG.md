@@ -1,5 +1,23 @@
 # Changelog
 
+## v2.0.0 — 2026-09-30
+
+Existing badges render exactly as before: without `style`, every URL still
+produces the classic badge, byte for byte (pinned by golden snapshots).
+
+### Added
+- Eight named styles, selected with `style=`: `skala`, `blueprint`,
+  `cherenkov`, `pyatachok`, `dosimeter`, `poster`, `gauge`, `minimal`.
+- Style options: `view` (full · core · panel), `panel` (right · bottom),
+  `cell` (square · round · circle · hex), `anim=off`, `accent`, `heat`,
+  `stats`, and an extra `theme` preset per style.
+- The website is now a style studio: gallery, live preview, every option,
+  shareable links and copyable Markdown / HTML snippets.
+- The Action accepts all the new options as inputs.
+
+### Changed
+- Styles use CSS animation that stops under `prefers-reduced-motion`.
+
 ## v1.1.0 — 2026-09-30
 
 Existing badges render exactly as before — every legacy URL is pinned by
