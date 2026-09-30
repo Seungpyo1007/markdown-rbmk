@@ -1,7 +1,14 @@
 import { writeFileSync } from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { collectContributions, collectStats, parseBadgeOptions, render } from '@markdown-rbmk/core';
+import {
+  collectContributions,
+  collectStats,
+  parseBadgeOptions,
+  render,
+  toContributionsInput,
+  toStatsInput,
+} from '@markdown-rbmk/core';
 
 /** Injectable dependencies — lets `run` be tested without network or disk. */
 export interface RunDeps {
@@ -41,7 +48,7 @@ export async function run(deps: RunDeps = {}): Promise<void> {
       throw new Error('No "username" input given and the repository owner could not be determined.');
     }
 
-    const { mode, scope, theme, maxRepos } = opts;
+    const { mode, theme } = opts;
     const outputPath = core.getInput('output_path') || 'reactor-core.svg';
     const token = process.env.GITHUB_TOKEN;
 
@@ -49,10 +56,10 @@ export async function run(deps: RunDeps = {}): Promise<void> {
     // Independent requests — fetch in parallel, as the server does.
     const [stats, contributions] = await Promise.all([
       mode === 'language' || mode === 'hybrid'
-        ? collectStatsFn({ username, scope, token, maxRepos })
+        ? collectStatsFn(toStatsInput(opts, username, token))
         : Promise.resolve(undefined),
       mode === 'commit' || mode === 'hybrid'
-        ? collectContributionsFn({ username, token })
+        ? collectContributionsFn(toContributionsInput(opts, username, token))
         : Promise.resolve(undefined),
     ]);
 

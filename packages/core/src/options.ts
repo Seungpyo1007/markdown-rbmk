@@ -1,4 +1,7 @@
-import type { RenderMode, Scope, Theme } from './types';
+import type { RenderMode, Scope, StatsInput, Theme } from './types';
+import { DEFAULT_CONTRIBUTION_DAYS, MAX_CONTRIBUTION_DAYS } from './contributions';
+import type { ContributionsInput } from './contributions';
+import { DEFAULT_TOP_LANGUAGES } from './stats';
 
 /**
  * Shared, strict parser for badge options. The hosted endpoint (query string)
@@ -22,6 +25,16 @@ export interface BadgeOptions {
   theme: Theme;
   scope: Scope;
   maxRepos: number;
+  /** Recent contribution days (30-728). */
+  days: number;
+  /** Named languages before "Other" (1-8). */
+  langs: number;
+  /** Lower-cased language names to drop — sorted, deduped. */
+  exclude: string[];
+  /** Include forked repositories. */
+  forks: boolean;
+  /** Include archived repositories. */
+  archived: boolean;
 }
 
 /** GitHub usernames: 1-39 chars, alphanumeric or single hyphens. */
@@ -37,6 +50,10 @@ export function isValidUsername(username: string): boolean {
  */
 const MAX_REPOS_LIMIT: Record<OptionContext, number> = { server: 100, action: 1000 };
 const MAX_REPOS_DEFAULT = 100;
+
+/** List limits for `exclude` — it is matched, never rendered, but bound it. */
+const MAX_EXCLUDE_ITEMS = 20;
+const MAX_LANGUAGE_NAME = 40;
 
 /**
  * Read a raw value. Only `username` is trimmed — the v1 endpoint compared
@@ -59,6 +76,23 @@ export function parseIntClamped(value: string, min: number, max: number, fallbac
   return Math.min(max, Math.max(min, n));
 }
 
+/** `true`/`1`/`yes` or `false`/`0`/`no` (case-insensitive); else fallback. */
+export function parseBool(value: string, fallback: boolean): boolean {
+  const v = value.trim().toLowerCase();
+  if (v === 'true' || v === '1' || v === 'yes') return true;
+  if (v === 'false' || v === '0' || v === 'no') return false;
+  return fallback;
+}
+
+/** Comma-separated names -> lower-cased, trimmed, deduped, sorted, bounded. */
+export function parseNameList(value: string): string[] {
+  const names = value
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0 && s.length <= MAX_LANGUAGE_NAME);
+  return [...new Set(names)].sort().slice(0, MAX_EXCLUDE_ITEMS);
+}
+
 /** Parse badge options from any key/value source. */
 export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 'server'): BadgeOptions {
   return {
@@ -67,6 +101,11 @@ export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 's
     theme: parseEnum<Theme>(raw(get, 'theme'), ['dark', 'light'], 'dark'),
     scope: parseEnum<Scope>(raw(get, 'scope'), ['public', 'all'], 'public'),
     maxRepos: parseIntClamped(raw(get, 'maxRepos'), 1, MAX_REPOS_LIMIT[context], MAX_REPOS_DEFAULT),
+    days: parseIntClamped(raw(get, 'days'), 30, MAX_CONTRIBUTION_DAYS, DEFAULT_CONTRIBUTION_DAYS),
+    langs: parseIntClamped(raw(get, 'langs'), 1, 8, DEFAULT_TOP_LANGUAGES),
+    exclude: parseNameList(raw(get, 'exclude')),
+    forks: parseBool(raw(get, 'forks'), false),
+    archived: parseBool(raw(get, 'archived'), true),
   };
 }
 
@@ -76,5 +115,44 @@ export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 's
  * `scope` is omitted — the server only ever renders public data.
  */
 export function badgeCacheKey(opts: BadgeOptions): string {
-  return [opts.username, opts.mode, opts.theme, opts.maxRepos].join(':');
+  return [
+    opts.username,
+    opts.mode,
+    opts.theme,
+    opts.maxRepos,
+    opts.days,
+    opts.langs,
+    opts.exclude.map(encodeURIComponent).join(','),
+    opts.forks ? 1 : 0,
+    opts.archived ? 1 : 0,
+  ].join(':');
+}
+
+
+/** Collector input for the language stats implied by a set of options. */
+export function toStatsInput(
+  opts: BadgeOptions,
+  username: string,
+  token: string | undefined,
+  scope: Scope = opts.scope,
+): StatsInput {
+  return {
+    username,
+    scope,
+    token,
+    maxRepos: opts.maxRepos,
+    excludeForks: !opts.forks,
+    excludeArchived: !opts.archived,
+    topLanguages: opts.langs,
+    excludeLanguages: opts.exclude,
+  };
+}
+
+/** Collector input for the contributions implied by a set of options. */
+export function toContributionsInput(
+  opts: BadgeOptions,
+  username: string,
+  token: string | undefined,
+): ContributionsInput {
+  return { username, token, days: opts.days };
 }

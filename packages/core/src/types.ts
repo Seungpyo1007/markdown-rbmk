@@ -8,6 +8,8 @@ export interface StatsInput {
   maxRepos?: number; // default 100
   excludeForks?: boolean; // default true
   excludeArchived?: boolean; // default false
+  topLanguages?: number; // languages shown before "Other", default 4
+  excludeLanguages?: string[]; // case-insensitive names to drop, default []
 }
 
 export interface LanguageStat {
@@ -46,6 +48,13 @@ export interface ContributionResult {
   totalContributions: number; // over the fetched window
   days: ContributionDay[]; // newest first
   generatedAt: string; // ISO 8601
+}
+
+/** Consecutive active-day runs, in days. */
+export interface Streaks {
+  /** Run ending today — or yesterday, since today may not be over yet. */
+  current: number;
+  longest: number;
 }
 
 /** Badge display mode (SPEC v0.2). */

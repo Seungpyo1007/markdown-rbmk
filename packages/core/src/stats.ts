@@ -1,8 +1,18 @@
 import { Octokit } from '@octokit/rest';
 import { graphql } from '@octokit/graphql';
-import { resolveColor } from './colors';
+import { LANGUAGE_COLORS, OTHER_COLOR, resolveColor } from './colors';
+import { mapLimit } from './concurrency';
 import { mapGitHubError, StatsError } from './errors';
 import type { LanguageStat, StatsInput, StatsResult } from './types';
+
+/** Max concurrent per-repo language requests (GitHub secondary rate limits). */
+export const LANGUAGE_FETCH_CONCURRENCY = 8;
+
+/** Default number of named languages before the "Other" bucket (v1: 4). */
+export const DEFAULT_TOP_LANGUAGES = 4;
+
+/** Fallback colours for slots 5-8, used only when `topLanguages` > 4. */
+const EXTRA_SLOT_COLORS = ['#9B59B6', '#1ABC9C', '#E67E22', '#95A5A6'] as const;
 
 /** One repository's language byte counts, normalised across REST and GraphQL. */
 export interface RepoInfo {
@@ -20,6 +30,9 @@ export interface ResolvedStatsInput {
   maxRepos: number;
   excludeForks: boolean;
   excludeArchived: boolean;
+  topLanguages: number;
+  /** Lower-cased language names to drop. */
+  excludeLanguages: string[];
 }
 
 /** Fetches repositories for a resolved input — injectable for testing. */
@@ -33,6 +46,8 @@ function resolveInput(input: StatsInput): ResolvedStatsInput {
     maxRepos: input.maxRepos ?? 100,
     excludeForks: input.excludeForks ?? true,
     excludeArchived: input.excludeArchived ?? false,
+    topLanguages: Math.max(1, input.topLanguages ?? DEFAULT_TOP_LANGUAGES),
+    excludeLanguages: (input.excludeLanguages ?? []).map((l) => l.toLowerCase()),
   };
 }
 
@@ -40,23 +55,33 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+/** Colour for a named language at a 0-based slot. */
+function slotColor(name: string, slot: number): string {
+  if (slot < DEFAULT_TOP_LANGUAGES) return resolveColor(name, slot); // v1 behaviour
+  return LANGUAGE_COLORS[name] ?? EXTRA_SLOT_COLORS[slot - DEFAULT_TOP_LANGUAGES] ?? OTHER_COLOR;
+}
+
 /**
- * Turn a {language: bytes} map into ranked LanguageStat[]: the top 4 languages
- * plus an "Other" bucket for the remainder (SPEC 4.3). Empty map -> [].
+ * Turn a {language: bytes} map into ranked LanguageStat[]: the top `top`
+ * languages (default 4) plus an "Other" bucket for the remainder (SPEC 4.3).
+ * Empty map -> [].
  */
-export function aggregateLanguages(byteMap: Record<string, number>): LanguageStat[] {
+export function aggregateLanguages(
+  byteMap: Record<string, number>,
+  top: number = DEFAULT_TOP_LANGUAGES,
+): LanguageStat[] {
   const total = Object.values(byteMap).reduce((a, b) => a + b, 0);
   if (total === 0) return [];
 
   const sorted = Object.entries(byteMap).sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, 4);
-  const rest = sorted.slice(4);
+  const head = sorted.slice(0, top);
+  const rest = sorted.slice(top);
 
-  const langs: LanguageStat[] = top.map(([name, bytes], i) => ({
+  const langs: LanguageStat[] = head.map(([name, bytes], i) => ({
     name,
     bytes,
     pct: round1((bytes / total) * 100),
-    color: resolveColor(name, i),
+    color: slotColor(name, i),
   }));
 
   if (rest.length > 0) {
@@ -65,7 +90,7 @@ export function aggregateLanguages(byteMap: Record<string, number>): LanguageSta
       name: 'Other',
       bytes: otherBytes,
       pct: round1((otherBytes / total) * 100),
-      color: resolveColor('Other', 4),
+      color: OTHER_COLOR,
     });
   }
 
@@ -77,10 +102,12 @@ function summarise(input: ResolvedStatsInput, repos: RepoInfo[]): StatsResult {
   const kept = repos.filter(
     (r) => !(input.excludeForks && r.isFork) && !(input.excludeArchived && r.isArchived),
   );
+  const excluded = new Set(input.excludeLanguages);
 
   const byteMap: Record<string, number> = {};
   for (const repo of kept) {
     for (const [lang, bytes] of Object.entries(repo.languages)) {
+      if (excluded.has(lang.toLowerCase())) continue;
       byteMap[lang] = (byteMap[lang] ?? 0) + bytes;
     }
   }
@@ -94,7 +121,7 @@ function summarise(input: ResolvedStatsInput, repos: RepoInfo[]): StatsResult {
     username: input.username,
     scope: input.scope,
     totalBytes,
-    langs: aggregateLanguages(byteMap),
+    langs: aggregateLanguages(byteMap, input.topLanguages),
     reposScanned: kept.length,
     generatedAt: new Date().toISOString(),
   };
@@ -129,16 +156,15 @@ async function fetchPublicRepos(input: ResolvedStatsInput): Promise<RepoInfo[]> 
     }
 
     // Fetch per-repo languages concurrently — sequential calls are far too
-    // slow for a badge endpoint (dozens of repos = several seconds).
-    return await Promise.all(
-      listed.map(async (repo) => {
-        const { data: languages } = await octokit.rest.repos.listLanguages({
-          owner: input.username,
-          repo: repo.name,
-        });
-        return { ...repo, languages };
-      }),
-    );
+    // slow for a badge endpoint — but capped, so a 100-repo user does not
+    // fire 100 simultaneous requests and trip GitHub's secondary rate limit.
+    return await mapLimit(listed, LANGUAGE_FETCH_CONCURRENCY, async (repo) => {
+      const { data: languages } = await octokit.rest.repos.listLanguages({
+        owner: input.username,
+        repo: repo.name,
+      });
+      return { ...repo, languages };
+    });
   } catch (err) {
     throw mapGitHubError(err);
   }

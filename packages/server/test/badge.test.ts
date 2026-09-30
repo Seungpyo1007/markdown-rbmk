@@ -101,4 +101,43 @@ describe('handleBadge', () => {
     expect(body).not.toContain('background:');
     expect(body).not.toContain('<rect width="600" height="600"');
   });
+
+  it('passes v1-equivalent collector inputs for a legacy URL', async () => {
+    const seen: { stats?: unknown; contributions?: unknown } = {};
+    await handleBadge(req('?username=octocat&mode=hybrid&maxRepos=7'), {
+      collectStats: async (input) => ((seen.stats = input), fakeStats(input.username)),
+      collectContributions: async (input) => ((seen.contributions = input), fakeContributions(input.username)),
+    });
+    expect(seen.stats).toEqual({
+      username: 'octocat',
+      scope: 'public',
+      token: process.env.GITHUB_TOKEN,
+      maxRepos: 7,
+      excludeForks: true,
+      excludeArchived: false,
+      topLanguages: 4,
+      excludeLanguages: [],
+    });
+    expect(seen.contributions).toEqual({ username: 'octocat', token: process.env.GITHUB_TOKEN, days: 470 });
+  });
+
+  it('forwards the data options to the collectors', async () => {
+    const seen: { stats?: Record<string, unknown>; contributions?: Record<string, unknown> } = {};
+    await handleBadge(
+      req('?username=octocat&mode=hybrid&days=90&langs=6&exclude=HTML,CSS&forks=true&archived=false'),
+      {
+        collectStats: async (input) => ((seen.stats = { ...input }), fakeStats(input.username)),
+        collectContributions: async (input) => (
+          (seen.contributions = { ...input }), fakeContributions(input.username)
+        ),
+      },
+    );
+    expect(seen.stats).toMatchObject({
+      topLanguages: 6,
+      excludeLanguages: ['css', 'html'],
+      excludeForks: false,
+      excludeArchived: true,
+    });
+    expect(seen.contributions).toMatchObject({ days: 90 });
+  });
 });

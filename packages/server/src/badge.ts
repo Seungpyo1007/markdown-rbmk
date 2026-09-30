@@ -6,6 +6,8 @@ import {
   parseBadgeOptions,
   render,
   StatsError,
+  toContributionsInput,
+  toStatsInput,
 } from '@markdown-rbmk/core';
 import { cacheGet, cacheSet } from './cache';
 import { fallbackSvg } from './fallback';
@@ -64,7 +66,7 @@ export async function handleBadge(request: Request, deps: BadgeDeps = {}): Promi
 
   const params = new URL(request.url).searchParams;
   const opts = parseBadgeOptions((name) => params.get(name), 'server');
-  const { username, theme, mode, maxRepos } = opts;
+  const { username, theme, mode } = opts;
 
   if (!username) {
     return svgResponse(fallbackSvg('Missing ?username parameter', theme), 'error');
@@ -87,13 +89,14 @@ export async function handleBadge(request: Request, deps: BadgeDeps = {}): Promi
 
   try {
     const token = process.env.GITHUB_TOKEN;
-    // Fetch stats and contributions in parallel (hybrid needs both).
+    // Fetch stats and contributions in parallel (hybrid needs both). The
+    // server never reads private data, whatever the options say.
     const [stats, contributions] = await Promise.all([
       mode === 'language' || mode === 'hybrid'
-        ? collectStatsFn({ username, scope: 'public', token, maxRepos })
+        ? collectStatsFn(toStatsInput(opts, username, token, 'public'))
         : Promise.resolve(undefined),
       mode === 'commit' || mode === 'hybrid'
-        ? collectContributionsFn({ username, token })
+        ? collectContributionsFn(toContributionsInput(opts, username, token))
         : Promise.resolve(undefined),
     ]);
 
