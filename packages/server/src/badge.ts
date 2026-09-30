@@ -1,5 +1,12 @@
-import { collectContributions, collectStats, render, StatsError } from '@markdown-rbmk/core';
-import type { RenderMode, Theme } from '@markdown-rbmk/core';
+import {
+  badgeCacheKey,
+  collectContributions,
+  collectStats,
+  isValidUsername,
+  parseBadgeOptions,
+  render,
+  StatsError,
+} from '@markdown-rbmk/core';
 import { cacheGet, cacheSet } from './cache';
 import { fallbackSvg } from './fallback';
 
@@ -9,29 +16,12 @@ export interface BadgeDeps {
   collectContributions?: typeof collectContributions;
 }
 
-/** GitHub usernames: 1-39 chars, alphanumeric or single hyphens. */
-const USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
-
 // `no-transform` keeps intermediaries from gzip-compressing the SVG. GitHub's
 // camo image proxy mishandles a compressed response and serves a truncated
 // copy, so the badge must go over the wire uncompressed.
 const SUCCESS_CACHE =
   'public, max-age=3600, s-maxage=86400, stale-while-revalidate=300, no-transform';
 const ERROR_CACHE = 'public, max-age=60, no-transform';
-
-function parseTheme(value: string | null): Theme {
-  return value === 'light' ? 'light' : 'dark';
-}
-
-function parseMode(value: string | null): RenderMode {
-  return value === 'language' || value === 'hybrid' ? value : 'commit';
-}
-
-function parseMaxRepos(value: string | null): number {
-  const n = Number.parseInt(value ?? '', 10);
-  if (!Number.isFinite(n)) return 100;
-  return Math.min(100, Math.max(1, n));
-}
 
 function statsErrorLines(err: StatsError): string[] {
   switch (err.code) {
@@ -73,28 +63,25 @@ export async function handleBadge(request: Request, deps: BadgeDeps = {}): Promi
   const collectContributionsFn = deps.collectContributions ?? collectContributions;
 
   const params = new URL(request.url).searchParams;
-  const username = params.get('username')?.trim() ?? '';
-  const theme = parseTheme(params.get('theme'));
-  const mode = parseMode(params.get('mode'));
-  const scope = params.get('scope') ?? 'public';
-  const maxRepos = parseMaxRepos(params.get('maxRepos'));
+  const opts = parseBadgeOptions((name) => params.get(name), 'server');
+  const { username, theme, mode, maxRepos } = opts;
 
   if (!username) {
     return svgResponse(fallbackSvg('Missing ?username parameter', theme), 'error');
   }
-  if (!USERNAME_RE.test(username)) {
+  if (!isValidUsername(username)) {
     return svgResponse(fallbackSvg('Invalid username', theme), 'error');
   }
   // The server only ever reads public data — scope=all needs the user's PAT,
   // which must never be sent to a shared server (SPEC 8.2).
-  if (scope === 'all') {
+  if (opts.scope === 'all') {
     return svgResponse(
       fallbackSvg(['scope=all is not available here', 'use the GitHub Action for private repos'], theme),
       'error',
     );
   }
 
-  const cacheKey = `${username}:${mode}:${theme}:${maxRepos}`;
+  const cacheKey = badgeCacheKey(opts);
   const cached = await cacheGet(cacheKey);
   if (cached) return svgResponse(cached, 'cached');
 

@@ -6,3 +6,4 @@ export * from './errors';
 export * from './stats';
 export * from './contributions';
 export * from './render';
+export * from './options';
