@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "RBMK reactor-core style SVG badge for GitHub language stats",
+  "description": "Your GitHub activity rendered as an animated RBMK reactor-core SVG badge",
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "build": "pnpm -r build",
     "build:fn": "ncc build packages/server/api/badge.ts -o .fn-build --minify --transpile-only && cp .fn-build/index.js badge-bundle.js && rm -rf .fn-build",

@@ -12,4 +12,3 @@ badge-bundle.js
 .vercel/
 packages/core/preview*.svg
 packages/core/e2e*.svg
-.vercel
