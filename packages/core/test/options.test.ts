@@ -20,6 +20,15 @@ describe('parseBadgeOptions', () => {
       exclude: [],
       forks: false,
       archived: true,
+      style: 'classic',
+      preset: 'dark',
+      view: 'full',
+      panel: 'right',
+      cell: 'default',
+      animate: true,
+      accent: null,
+      heat: null,
+      stats: null,
     });
   });
 

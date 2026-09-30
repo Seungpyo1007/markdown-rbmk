@@ -1,3 +1,5 @@
+import type { CellShape, PanelPosition, StatKey, StyleName, View } from './styles/types';
+
 export type Scope = 'public' | 'all';
 export type Theme = 'dark' | 'light';
 
@@ -62,16 +64,25 @@ export type RenderMode = 'commit' | 'language' | 'hybrid';
 
 /**
  * Visual style. `classic` is the v1 look and the default forever — existing
- * embeds never change. `v2` is the opt-in redesign.
+ * embeds never change. The rest are the named v2 styles in `styles/`.
  */
-export type BadgeStyle = 'classic' | 'v2';
+export type BadgeStyle = 'classic' | StyleName;
 
 export interface RenderOptions {
   style?: BadgeStyle; // default 'classic'
   mode?: RenderMode; // default 'commit'
   username: string; // seeds the deterministic RNG
-  theme?: Theme; // default 'dark'
-  showLegend?: boolean; // default true — the instrument panel
+  theme?: Theme; // default 'dark' — classic only
+  showLegend?: boolean; // default true — the instrument panel (classic only)
   stats?: StatsResult; // required for 'language' and 'hybrid'
   contributions?: ContributionResult; // required for 'commit' and 'hybrid'
+  // ---- v2 styles only (ignored by classic) ----
+  preset?: string; // a preset of the chosen style; default = theme
+  view?: View; // default 'full'
+  panel?: PanelPosition; // default 'right'
+  cell?: CellShape; // default: the style's own
+  animate?: boolean; // default true
+  accent?: string | null; // validated #rrggbb
+  heat?: readonly [string, string, string, string, string] | null; // idle + 4 levels
+  panelStats?: readonly StatKey[] | null; // panel readouts in order
 }

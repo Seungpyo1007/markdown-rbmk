@@ -55,6 +55,15 @@ describe('playground URL builder', () => {
       exclude: ['html', 'jupyter notebook'],
       forks: true,
       archived: false,
+      style: 'classic',
+      preset: 'light',
+      view: 'full',
+      panel: 'right',
+      cell: 'default',
+      animate: true,
+      accent: null,
+      heat: null,
+      stats: null,
     });
   });
 

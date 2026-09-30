@@ -2,6 +2,10 @@ import type { RenderMode, Scope, StatsInput, Theme } from './types';
 import { DEFAULT_CONTRIBUTION_DAYS, MAX_CONTRIBUTION_DAYS } from './contributions';
 import type { ContributionsInput } from './contributions';
 import { DEFAULT_TOP_LANGUAGES } from './stats';
+import { STYLE_META } from './styles/meta';
+import { CELL_SHAPES, STAT_KEYS, STYLE_NAMES } from './styles/types';
+import type { CellShape, PanelPosition, StatKey, StyleName, View } from './styles/types';
+import type { BadgeStyle } from './types';
 
 /**
  * Shared, strict parser for badge options. The hosted endpoint (query string)
@@ -35,6 +39,20 @@ export interface BadgeOptions {
   forks: boolean;
   /** Include archived repositories. */
   archived: boolean;
+  // ---- v2 styles (ignored by classic) ----
+  style: BadgeStyle;
+  /** Preset of the chosen style (the `theme` param). For classic = theme. */
+  preset: string;
+  view: View;
+  panel: PanelPosition;
+  cell: CellShape;
+  animate: boolean;
+  /** `#rrggbb` or null. */
+  accent: string | null;
+  /** `[idle, h1, h2, h3, h4]` as `#rrggbb`, or null. */
+  heat: [string, string, string, string, string] | null;
+  /** Panel readouts in order, or null for the style default. */
+  stats: StatKey[] | null;
 }
 
 /** GitHub usernames: 1-39 chars, alphanumeric or single hyphens. */
@@ -95,10 +113,12 @@ export function parseNameList(value: string): string[] {
 
 /** Parse badge options from any key/value source. */
 export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 'server'): BadgeOptions {
+  const theme = parseEnum<Theme>(raw(get, 'theme'), ['dark', 'light'], 'dark');
+  const style = parseEnum<BadgeStyle>(raw(get, 'style').trim().toLowerCase(), ['classic', ...STYLE_NAMES], 'classic');
   return {
     username: raw(get, 'username').trim(),
     mode: parseEnum<RenderMode>(raw(get, 'mode'), ['commit', 'language', 'hybrid'], 'commit'),
-    theme: parseEnum<Theme>(raw(get, 'theme'), ['dark', 'light'], 'dark'),
+    theme,
     scope: parseEnum<Scope>(raw(get, 'scope'), ['public', 'all'], 'public'),
     maxRepos: parseIntClamped(raw(get, 'maxRepos'), 1, MAX_REPOS_LIMIT[context], MAX_REPOS_DEFAULT),
     days: parseIntClamped(raw(get, 'days'), 30, MAX_CONTRIBUTION_DAYS, DEFAULT_CONTRIBUTION_DAYS),
@@ -106,7 +126,57 @@ export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 's
     exclude: parseNameList(raw(get, 'exclude')),
     forks: parseBool(raw(get, 'forks'), false),
     archived: parseBool(raw(get, 'archived'), true),
+    style,
+    preset: parsePreset(style, raw(get, 'theme'), theme),
+    view: parseEnum<View>(raw(get, 'view').trim().toLowerCase(), ['full', 'core', 'panel'], 'full'),
+    panel: parseEnum<PanelPosition>(raw(get, 'panel').trim().toLowerCase(), ['right', 'bottom'], 'right'),
+    cell: parseEnum<CellShape>(raw(get, 'cell').trim().toLowerCase(), CELL_SHAPES, 'default'),
+    animate: parseAnim(raw(get, 'anim')),
+    accent: parseHex(raw(get, 'accent')),
+    heat: parseHeat(raw(get, 'heat')),
+    stats: parseStatList(raw(get, 'stats')),
   };
+}
+
+/** Strict colour: `rrggbb` or `#rrggbb` (also 3-digit), returned as `#rrggbb`. */
+const HEX_RE = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+export function parseHex(value: string): string | null {
+  const m = HEX_RE.exec(value.trim());
+  if (!m) return null;
+  const h = m[1]!.length === 3 ? [...m[1]!].map((c) => c + c).join('') : m[1]!;
+  return `#${h.toLowerCase()}`;
+}
+
+/** `heat=idle,h1,h2,h3,h4` — all five must be valid, else ignored. */
+export function parseHeat(value: string): [string, string, string, string, string] | null {
+  if (!value.trim()) return null;
+  const parts = value.split(',').map(parseHex);
+  if (parts.length !== 5 || parts.some((p) => p === null)) return null;
+  return parts as [string, string, string, string, string];
+}
+
+/** `stats=total,streak,...` — known keys, deduped, in the given order. */
+export function parseStatList(value: string): StatKey[] | null {
+  if (!value.trim()) return null;
+  const keys = value
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is StatKey => (STAT_KEYS as readonly string[]).includes(s));
+  const unique = [...new Set(keys)];
+  return unique.length ? unique : null;
+}
+
+/** `anim=off|none|false|0|static` disables animation; anything else keeps it. */
+function parseAnim(value: string): boolean {
+  return !['off', 'none', 'false', '0', 'static', 'no'].includes(value.trim().toLowerCase());
+}
+
+/** A style's preset from the `theme` param; unknown -> dark/light by theme. */
+function parsePreset(style: BadgeStyle, rawTheme: string, theme: Theme): string {
+  if (style === 'classic') return theme;
+  const presets = STYLE_META[style as StyleName].presets;
+  const wanted = rawTheme.trim().toLowerCase();
+  return presets.includes(wanted) ? wanted : theme;
 }
 
 /**
@@ -115,7 +185,7 @@ export function parseBadgeOptions(get: OptionGetter, context: OptionContext = 's
  * `scope` is omitted — the server only ever renders public data.
  */
 export function badgeCacheKey(opts: BadgeOptions): string {
-  return [
+  const base = [
     opts.username,
     opts.mode,
     opts.theme,
@@ -125,7 +195,38 @@ export function badgeCacheKey(opts: BadgeOptions): string {
     opts.exclude.map(encodeURIComponent).join(','),
     opts.forks ? 1 : 0,
     opts.archived ? 1 : 0,
+  ];
+  if (opts.style === 'classic') return base.join(':');
+  return [
+    ...base,
+    opts.style,
+    opts.preset,
+    opts.view,
+    opts.panel,
+    opts.cell,
+    opts.animate ? 1 : 0,
+    opts.accent ?? '-',
+    opts.heat?.join(',') ?? '-',
+    opts.stats?.join(',') ?? '-',
   ].join(':');
+}
+
+/** Render options (minus data) implied by a set of badge options. */
+export function toRenderOptions(opts: BadgeOptions, username: string = opts.username) {
+  return {
+    style: opts.style,
+    mode: opts.mode,
+    username,
+    theme: opts.theme,
+    preset: opts.preset,
+    view: opts.view,
+    panel: opts.panel,
+    cell: opts.cell,
+    animate: opts.animate,
+    accent: opts.accent,
+    heat: opts.heat,
+    panelStats: opts.stats,
+  };
 }
 
 
