@@ -117,7 +117,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - uses: Seungpyo1007/markdown-rbmk/packages/action@v1.0.0
+      - uses: Seungpyo1007/markdown-rbmk/packages/action@v1
         with:
           username: ${{ github.repository_owner }}
           mode: commit
@@ -157,14 +157,11 @@ and set `scope: all`:
 | `theme`       | `dark` · `light`                 | `dark`             |
 | `output_path` | file path                        | `reactor-core.svg` |
 | `max_repos`   | `1`–`1000`                       | `100`              |
-| `days` ¹      | `30`–`728`                       | `470`              |
-| `langs` ¹     | `1`–`8`                          | `4`                |
-| `exclude` ¹   | comma-separated languages        | none               |
-| `forks` ¹     | `true` · `false`                 | `false`            |
-| `archived` ¹  | `true` · `false`                 | `true`             |
-
-¹ New inputs — available from the first release after `v1.0.0`. Until then,
-pin `@main` to use them, or use the hosted badge.
+| `days`        | `30`–`728`                       | `470`              |
+| `langs`       | `1`–`8`                          | `4`                |
+| `exclude`     | comma-separated languages        | none               |
+| `forks`       | `true` · `false`                 | `false`            |
+| `archived`    | `true` · `false`                 | `true`             |
 
 ---
 
