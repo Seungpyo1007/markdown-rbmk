@@ -1,8 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { collectContributions, collectStats, render } from '@markdown-rbmk/core';
-import type { RenderMode, Scope, Theme } from '@markdown-rbmk/core';
+import { collectContributions, collectStats, parseBadgeOptions, render } from '@markdown-rbmk/core';
 
 /** Injectable dependencies — lets `run` be tested without network or disk. */
 export interface RunDeps {
@@ -11,19 +10,18 @@ export interface RunDeps {
   writeFile?: (path: string, data: string) => void;
 }
 
-/** Use the `username` input, falling back to the repository owner. */
-function resolveUsername(): string {
-  const input = core.getInput('username').trim();
-  if (input) return input;
+/** Workflow inputs are snake_case; the shared parser uses camelCase names. */
+function input(name: string): string {
+  return core.getInput(name.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`));
+}
+
+/** The repository owner, used when no `username` input is given. */
+function repoOwner(): string {
   try {
     return github.context.repo.owner;
   } catch {
     return '';
   }
-}
-
-function parseMode(value: string): RenderMode {
-  return value === 'language' || value === 'hybrid' ? value : 'commit';
 }
 
 /**
@@ -37,28 +35,26 @@ export async function run(deps: RunDeps = {}): Promise<void> {
   const writeFile = deps.writeFile ?? writeFileSync;
 
   try {
-    const username = resolveUsername();
+    const opts = parseBadgeOptions(input, 'action');
+    const username = opts.username || repoOwner();
     if (!username) {
       throw new Error('No "username" input given and the repository owner could not be determined.');
     }
 
-    const mode = parseMode(core.getInput('mode'));
-    const scope = (core.getInput('scope') || 'public') as Scope;
-    const theme = (core.getInput('theme') || 'dark') as Theme;
+    const { mode, scope, theme, maxRepos } = opts;
     const outputPath = core.getInput('output_path') || 'reactor-core.svg';
-    const parsedMax = Number.parseInt(core.getInput('max_repos') || '100', 10);
-    const maxRepos = Number.isFinite(parsedMax) ? parsedMax : 100;
     const token = process.env.GITHUB_TOKEN;
 
     core.info(`Building ${mode}-mode badge for ${username}…`);
-    const stats =
+    // Independent requests — fetch in parallel, as the server does.
+    const [stats, contributions] = await Promise.all([
       mode === 'language' || mode === 'hybrid'
-        ? await collectStatsFn({ username, scope, token, maxRepos })
-        : undefined;
-    const contributions =
+        ? collectStatsFn({ username, scope, token, maxRepos })
+        : Promise.resolve(undefined),
       mode === 'commit' || mode === 'hybrid'
-        ? await collectContributionsFn({ username, token })
-        : undefined;
+        ? collectContributionsFn({ username, token })
+        : Promise.resolve(undefined),
+    ]);
 
     const svg = render({ mode, username, theme, stats, contributions });
     writeFile(outputPath, svg);

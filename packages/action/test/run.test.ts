@@ -117,3 +117,60 @@ describe('run', () => {
     setFailed.mockClear();
   });
 });
+
+describe('run input validation', () => {
+  it('falls back to dark on an unknown theme instead of crashing', async () => {
+    process.env.INPUT_USERNAME = 'octocat';
+    process.env.INPUT_THEME = 'neon';
+    const written: string[] = [];
+
+    await run({
+      collectContributions: async (input) => fakeContributions(input.username),
+      writeFile: (_path, data) => written.push(data),
+    });
+
+    expect(written).toHaveLength(1);
+    expect(written[0]).toContain('#0d3a1a'); // dark-theme dot colour
+    expect(process.exitCode ?? 0).toBe(0);
+  });
+
+  it('clamps max_repos and ignores an unknown scope', async () => {
+    process.env.INPUT_USERNAME = 'octocat';
+    process.env.INPUT_MODE = 'language';
+    process.env.INPUT_SCOPE = 'everything';
+    process.env.INPUT_MAX_REPOS = '99999';
+    let seen: { scope?: string; maxRepos?: number } = {};
+
+    await run({
+      collectStats: async (input) => {
+        seen = { scope: input.scope, maxRepos: input.maxRepos };
+        return fakeStats(input.username, input.scope);
+      },
+      writeFile: () => {},
+    });
+
+    expect(seen).toEqual({ scope: 'public', maxRepos: 1000 });
+  });
+
+  it('renders the same SVG as the hosted endpoint for the same options', async () => {
+    const { handleBadge } = await import('../../server/src/badge');
+    process.env.INPUT_USERNAME = 'octocat';
+    process.env.INPUT_MODE = 'hybrid';
+    process.env.INPUT_THEME = 'light';
+    const deps = {
+      collectStats: async (input: { username: string; scope: 'public' | 'all' }) =>
+        fakeStats(input.username, input.scope),
+      collectContributions: async (input: { username: string }) => fakeContributions(input.username),
+    };
+    let actionSvg = '';
+
+    await run({ ...deps, writeFile: (_path, data) => (actionSvg = data) });
+    const res = await handleBadge(
+      new Request('https://example.com/api/badge?username=octocat&mode=hybrid&theme=light'),
+      deps,
+    );
+
+    expect(actionSvg).not.toBe('');
+    expect(actionSvg).toBe(await res.text());
+  });
+});
