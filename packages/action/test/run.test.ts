@@ -174,3 +174,36 @@ describe('run input validation', () => {
     expect(actionSvg).toBe(await res.text());
   });
 });
+
+describe('run data inputs', () => {
+  it('forwards days, langs, exclude, forks and archived to the collectors', async () => {
+    process.env.INPUT_USERNAME = 'octocat';
+    process.env.INPUT_MODE = 'hybrid';
+    process.env.INPUT_DAYS = '90';
+    process.env.INPUT_LANGS = '6';
+    process.env.INPUT_EXCLUDE = 'HTML, Jupyter Notebook';
+    process.env.INPUT_FORKS = 'true';
+    process.env.INPUT_ARCHIVED = 'false';
+    const seen: { stats?: Record<string, unknown>; days?: number } = {};
+
+    await run({
+      collectStats: async (input) => {
+        seen.stats = { ...input };
+        return fakeStats(input.username, input.scope);
+      },
+      collectContributions: async (input) => {
+        seen.days = input.days;
+        return fakeContributions(input.username);
+      },
+      writeFile: () => {},
+    });
+
+    expect(seen.days).toBe(90);
+    expect(seen.stats).toMatchObject({
+      topLanguages: 6,
+      excludeLanguages: ['html', 'jupyter notebook'],
+      excludeForks: false,
+      excludeArchived: true,
+    });
+  });
+});
