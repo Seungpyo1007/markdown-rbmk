@@ -7,6 +7,7 @@ import {
   parseBadgeOptions,
   render,
   toContributionsInput,
+  toRenderOptions,
   toStatsInput,
 } from '@markdown-rbmk/core';
 
@@ -48,7 +49,7 @@ export async function run(deps: RunDeps = {}): Promise<void> {
       throw new Error('No "username" input given and the repository owner could not be determined.');
     }
 
-    const { mode, theme } = opts;
+    const { mode } = opts;
     const outputPath = core.getInput('output_path') || 'reactor-core.svg';
     const token = process.env.GITHUB_TOKEN;
 
@@ -63,7 +64,7 @@ export async function run(deps: RunDeps = {}): Promise<void> {
         : Promise.resolve(undefined),
     ]);
 
-    const svg = render({ mode, username, theme, stats, contributions });
+    const svg = render({ ...toRenderOptions(opts, username), stats, contributions });
     writeFile(outputPath, svg);
     core.info(`Wrote ${outputPath} (${svg.length} bytes).`);
     core.setOutput('svg_path', outputPath);

@@ -7,6 +7,7 @@ import {
   render,
   StatsError,
   toContributionsInput,
+  toRenderOptions,
   toStatsInput,
 } from '@markdown-rbmk/core';
 import { cacheGet, cacheSet } from './cache';
@@ -100,7 +101,7 @@ export async function handleBadge(request: Request, deps: BadgeDeps = {}): Promi
         : Promise.resolve(undefined),
     ]);
 
-    const svg = render({ mode, username, theme, stats, contributions });
+    const svg = render({ ...toRenderOptions(opts, username), stats, contributions });
     await cacheSet(cacheKey, svg);
     return svgResponse(svg, 'fresh');
   } catch (err) {

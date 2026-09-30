@@ -8,3 +8,4 @@ export * from './contributions';
 export * from './render';
 export * from './options';
 export * from './concurrency';
+export * from './styles';
