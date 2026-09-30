@@ -1,0 +1,2 @@
+# Golden snapshots are compared byte-for-byte — never convert line endings.
+**/__golden__/** -text
