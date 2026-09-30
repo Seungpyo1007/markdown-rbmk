@@ -207,3 +207,29 @@ describe('run data inputs', () => {
     });
   });
 });
+
+describe('run style inputs', () => {
+  it('renders a v2 style from workflow inputs, identical to the endpoint', async () => {
+    const { handleBadge } = await import('../../server/src/badge');
+    process.env.INPUT_USERNAME = 'octocat';
+    process.env.INPUT_STYLE = 'blueprint';
+    process.env.INPUT_THEME = 'sepia';
+    process.env.INPUT_VIEW = 'core';
+    process.env.INPUT_CELL = 'hex';
+    process.env.INPUT_ANIM = 'off';
+    process.env.INPUT_ACCENT = 'ff8800';
+    const deps = { collectContributions: async (input: { username: string }) => fakeContributions(input.username) };
+    let svg = '';
+
+    await run({ ...deps, writeFile: (_p, data) => (svg = data) });
+    const res = await handleBadge(
+      new Request('https://example.com/api/badge?username=octocat&style=blueprint&theme=sepia&view=core&cell=hex&anim=off&accent=ff8800'),
+      deps,
+    );
+
+    expect(svg).toContain('blueprint');
+    expect(svg).not.toContain('@keyframes');
+    expect(svg).toContain('#ff8800');
+    expect(svg).toBe(await res.text());
+  });
+});

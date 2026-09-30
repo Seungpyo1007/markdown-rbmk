@@ -21,7 +21,7 @@ inputs:
     required: false
     default: 'reactor-core.svg'
   theme:
-    description: 'Badge theme: dark or light.'
+    description: 'Badge theme: dark or light (v2 styles also accept their extra preset, e.g. sepia for blueprint).'
     required: false
     default: 'dark'
   max_repos:
@@ -48,6 +48,38 @@ inputs:
     description: 'Include archived repositories (true/false).'
     required: false
     default: 'true'
+  style:
+    description: 'Badge style: classic (default, the original look), skala, blueprint, cherenkov, pyatachok, dosimeter, poster, gauge or minimal.'
+    required: false
+    default: 'classic'
+  view:
+    description: 'v2 styles: full (core + panel), core (reactor only) or panel (readouts only).'
+    required: false
+    default: 'full'
+  panel:
+    description: 'v2 styles: panel position in the full view — right or bottom.'
+    required: false
+    default: 'right'
+  cell:
+    description: 'v2 styles: cell shape — default, square, round, circle or hex.'
+    required: false
+    default: 'default'
+  anim:
+    description: 'v2 styles: on, or off for a static SVG.'
+    required: false
+    default: 'on'
+  accent:
+    description: 'v2 styles: accent colour as hex, e.g. ff8800.'
+    required: false
+    default: ''
+  heat:
+    description: 'v2 styles: five hex colours idle,h1,h2,h3,h4 for the heat ramp.'
+    required: false
+    default: ''
+  stats:
+    description: 'v2 styles: panel readouts in order, from total, active, idle, peak, streak, longest, languages.'
+    required: false
+    default: ''
 outputs:
   svg_path:
     description: 'Path of the generated SVG file.'
