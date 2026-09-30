@@ -3,6 +3,13 @@ import * as core from '@actions/core';
 import type { ContributionResult, StatsResult } from '@markdown-rbmk/core';
 import { run } from '../src/run';
 
+// @actions/core is ESM-only, so its exports cannot be spied on directly.
+// Wrap setFailed in a mock that still forwards to the real implementation.
+vi.mock('@actions/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@actions/core')>();
+  return { ...actual, setFailed: vi.fn(actual.setFailed) };
+});
+
 const fakeStats = (username: string, scope: 'public' | 'all'): StatsResult => ({
   username,
   scope,
@@ -93,7 +100,7 @@ describe('run', () => {
     process.env.INPUT_USERNAME = 'ghost';
     // Stub setFailed so its `::error::` workflow command is not emitted as a
     // stray annotation when the suite itself runs inside GitHub Actions.
-    const setFailed = vi.spyOn(core, 'setFailed').mockImplementation(() => {});
+    const setFailed = vi.mocked(core.setFailed).mockImplementationOnce(() => {});
     let wrote = false;
 
     await run({
@@ -107,6 +114,6 @@ describe('run', () => {
 
     expect(wrote).toBe(false);
     expect(setFailed).toHaveBeenCalledWith(expect.stringContaining('boom'));
-    setFailed.mockRestore();
+    setFailed.mockClear();
   });
 });
