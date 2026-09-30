@@ -7,3 +7,4 @@ export * from './stats';
 export * from './contributions';
 export * from './render';
 export * from './options';
+export * from './concurrency';

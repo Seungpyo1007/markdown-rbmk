@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { badgeCacheKey, isValidUsername, parseBadgeOptions } from '../src/options';
+import { badgeCacheKey, isValidUsername, parseBadgeOptions, toContributionsInput, toStatsInput } from '../src/options';
 
 /** Build a getter from a plain object, mimicking URLSearchParams.get. */
 const from =
@@ -15,7 +15,39 @@ describe('parseBadgeOptions', () => {
       theme: 'dark',
       scope: 'public',
       maxRepos: 100,
+      days: 470,
+      langs: 4,
+      exclude: [],
+      forks: false,
+      archived: true,
     });
+  });
+
+  it('parses and clamps the data options', () => {
+    expect(parseBadgeOptions(from({ days: '90', langs: '6' }))).toMatchObject({ days: 90, langs: 6 });
+    expect(parseBadgeOptions(from({ days: '1', langs: '0' }))).toMatchObject({ days: 30, langs: 1 });
+    expect(parseBadgeOptions(from({ days: '9999', langs: '99' }))).toMatchObject({ days: 728, langs: 8 });
+    expect(parseBadgeOptions(from({ days: 'x', langs: 'y' }))).toMatchObject({ days: 470, langs: 4 });
+  });
+
+  it('parses boolean repo filters', () => {
+    expect(parseBadgeOptions(from({ forks: 'true', archived: 'false' }))).toMatchObject({
+      forks: true,
+      archived: false,
+    });
+    expect(parseBadgeOptions(from({ forks: 'YES', archived: '0' }))).toMatchObject({ forks: true, archived: false });
+    expect(parseBadgeOptions(from({ forks: 'maybe', archived: '' }))).toMatchObject({ forks: false, archived: true });
+  });
+
+  it('normalises the exclude list', () => {
+    expect(parseBadgeOptions(from({ exclude: ' HTML, css,,Jupyter Notebook,html ' })).exclude).toEqual([
+      'css',
+      'html',
+      'jupyter notebook',
+    ]);
+    const many = Array.from({ length: 50 }, (_, i) => `lang${i}`).join(',');
+    expect(parseBadgeOptions(from({ exclude: many })).exclude).toHaveLength(20);
+    expect(parseBadgeOptions(from({ exclude: 'x'.repeat(41) })).exclude).toEqual([]);
   });
 
   it('accepts every valid enum value', () => {
@@ -74,5 +106,34 @@ describe('badgeCacheKey', () => {
     const a = parseBadgeOptions(from({ username: 'octocat' }));
     const b = parseBadgeOptions(from({ username: 'octocat', theme: 'light' }));
     expect(badgeCacheKey(a)).not.toBe(badgeCacheKey(b));
+    for (const extra of [{ days: '90' }, { langs: '6' }, { exclude: 'html' }, { forks: 'true' }, { archived: 'false' }]) {
+      expect(badgeCacheKey(parseBadgeOptions(from({ username: 'octocat', ...extra })))).not.toBe(badgeCacheKey(a));
+    }
+  });
+  it('does not let an exclude entry forge key separators', () => {
+    const a = parseBadgeOptions(from({ username: 'octocat', exclude: 'a:b' }));
+    expect(badgeCacheKey(a).split(':')).toHaveLength(9);
+  });
+});
+
+describe('collector inputs', () => {
+  it('reproduce the v1 inputs for default options', () => {
+    const o = parseBadgeOptions(from({ username: 'octocat' }));
+    expect(toStatsInput(o, 'octocat', 't')).toEqual({
+      username: 'octocat',
+      scope: 'public',
+      token: 't',
+      maxRepos: 100,
+      excludeForks: true,
+      excludeArchived: false,
+      topLanguages: 4,
+      excludeLanguages: [],
+    });
+    expect(toContributionsInput(o, 'octocat', 't')).toEqual({ username: 'octocat', token: 't', days: 470 });
+  });
+
+  it('let the caller force the scope', () => {
+    const o = parseBadgeOptions(from({ scope: 'all' }));
+    expect(toStatsInput(o, 'octocat', 't', 'public').scope).toBe('public');
   });
 });
