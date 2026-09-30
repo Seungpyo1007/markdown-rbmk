@@ -12,3 +12,6 @@ badge-bundle.js
 .vercel/
 packages/core/preview*.svg
 packages/core/e2e*.svg
+# v2 design prototypes and the comparison page (Task 8, not shipped)
+packages/core/design/
+packages/core/preview-v2.html
