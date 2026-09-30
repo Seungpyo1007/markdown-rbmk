@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    // The bundle compiles workspace sources (packages/core) too.
+    "rootDir": "../.."
   },
   "include": ["src"]
 }
